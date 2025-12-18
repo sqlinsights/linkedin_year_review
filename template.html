@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Vision UI Export</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #060b26;
+            --card-bg: linear-gradient(127deg, rgba(6, 11, 38, 0.94) 0%, rgba(26, 31, 55, 0.94) 100%);
+            --accent-blue: #0075ff;
+            --text-main: #ffffff;
+            --text-muted: #a0aec0;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-deep);
+            display: inline-block;
+            vertical-align: top;
+            font-family: "Plus Jakarta Sans", sans-serif;
+        }
+
+        #capture {
+            display: inline-block;
+            padding: 30px;
+            background: radial-gradient(circle at 20% 20%, #1a1f37 0%, #060b26 100%);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            max-width: 1150;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 21px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        .value {
+            font-size: 26px;
+            font-weight: 700;
+            color: white;
+            margin: 0;
+        }
+
+        .sub-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        /* Pill List Styling */
+        .pill-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .pill-item {
+            background: rgba(0, 117, 255, 0.15);
+            color: var(--accent-blue);
+            border: 1px solid rgba(233, 102, 3, 0.3);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* Grid Span Helpers */
+        .span-1 {
+            grid-column: span 1;
+        }
+
+        .span-2 {
+            grid-column: span 2;
+        }
+
+        .span-3 {
+            grid-column: span 3;
+        }
+
+        .span-4 {
+            grid-column: span 4;
+        }
+
+        h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="capture">
+        <div class="dashboard-grid">
+
+            {% for metric in metrics %}
+            <div class="card {{ metric.span_class if metric.span_class else 'span-1' }}">
+                <div class="metric-label">{{ metric.label }}</div>
+
+                {% if metric.type == 'pill_list' %}
+                <div class="pill-list">
+                    {% for pill in metric.pills %}
+                    <div class="pill-item">{{ pill }}</div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="value">{{ metric.value }}</div>
+                {% endif %}
+
+                {% if metric.sub_label %}<div class="sub-label">{{ metric.sub_label }}</div>{% endif %}
+            </div>
+            {% endfor %}
+
+            {% for chart in charts %}
+            <div class="card {{ chart.span_class if chart.span_class else 'span-2' }}">
+                <h3>{{ chart.title }}</h3>
+                <div class="chart-container" style="height: {{ chart.height }}px;">
+                    <canvas id="chart-{{ loop.index0 }}"></canvas>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        // Disable animations for static capture
+        Chart.defaults.animation = false;
+        const chartData = {{ charts | tojson }};
+
+        chartData.forEach((config, index) => {
+            const ctx = document.getElementById(`chart-${index}`).getContext('2d');
+
+            let background = '#ffffff';
+            if (config.type === 'line') {
+                const grad = ctx.createLinearGradient(0, 0, 0, 200);
+                grad.addColorStop(0, 'rgba(0, 117, 255, 0.3)');
+                grad.addColorStop(1, 'rgba(0, 117, 255, 0)');
+                background = grad;
+            }
+
+            new Chart(ctx, {
+                type: config.type,
+                data: {
+                    labels: config.labels,
+                    datasets: [{
+                        data: config.values,
+                        borderColor: '#0075ff',
+                        backgroundColor: background,
+                        borderWidth: 3,
+                        fill: config.type === 'line',
+                        tension: 0.4,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#a0aec0', display: config.type === 'line' }
+                        },
+                        x: { grid: { display: false }, ticks: { color: '#a0aec0' } }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
