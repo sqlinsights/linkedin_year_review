@@ -1,13 +1,9 @@
 import streamlit as st
 import pandas as pd
 from typing import Optional, Union, List
-from datetime import date
-import pyautogui
-import time
 from jinja2 import Environment, FileSystemLoader
 from html2image import Html2Image
 from io import BytesIO
-from PIL import Image
 import humanize
 import tempfile
 temp_dir = tempfile.gettempdir()
