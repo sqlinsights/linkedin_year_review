@@ -232,17 +232,32 @@
         function exportDashboard() {
             const area = document.getElementById('capture-area');
 
-            // html2canvas captures exactly the #capture-area element
             html2canvas(area, {
                 backgroundColor: null,
-                scale: 2,             // Retina quality
-                useCORS: true,        // Load external fonts
+                scale: 2,
+                useCORS: true,
                 logging: false
             }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = 'LinkedIn-Year-in-Review-2025.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
+                const imgData = canvas.toDataURL('image/png');
+
+                // Check if we are on iOS
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+                if (isIOS) {
+                    // iOS Chrome/Safari workaround: Open image in new tab
+                    // The user can then long-press to "Save to Photos"
+                    const newTab = window.open();
+                    newTab.document.write('<img src="' + imgData + '" style="width:100%; height:auto;">');
+                    newTab.document.title = "Download Report";
+                    alert("iOS Security: Please long-press the image in the new tab to 'Save to Photos'.");
+                } else {
+                    // Standard desktop/android download
+                    const link = document.createElement('a');
+                    link.download = 'LinkedIn-Year-in-Review-2025.png';
+                    link.href = imgData;
+                    link.click();
+                }
             });
         }
     </script>
