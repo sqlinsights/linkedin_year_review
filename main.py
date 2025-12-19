@@ -7,6 +7,8 @@ from io import BytesIO
 import humanize
 import tempfile
 import os
+from streamlit.components.v1 import html
+
 # st.html('styles.css')
 
 from pydantic import BaseModel
@@ -120,51 +122,35 @@ class LinkedInAnalyticsProcessor:
                                         ).model_dump())
             
             
-# with st.container(key="instructions", border=True):            
-st.subheader("Step 1", anchor=False)
-st.link_button("Open your Dashboard", 
-            url="https://www.linkedin.com/analytics/creator/content/?metricType=ENGAGEMENTS&timeRange=past_365_days",
-            type="secondary",
-            icon=":material/arrow_outward:",
-            use_container_width=True)
-st.subheader("Step 2", anchor=False)
-st.write("Click on **:blue-background[:material/download: Export]**")
-st.subheader("Step 3", anchor=False)
-stats = LinkedInAnalyticsProcessor()
+with st.container(horizontal=True, vertical_alignment='bottom', horizontal_alignment='left'): 
+    st.subheader("Step 1", anchor=False,width="content")
+    st.link_button("Open your Dashboard", 
+                url="https://www.linkedin.com/analytics/creator/content/?metricType=ENGAGEMENTS&timeRange=past_365_days",
+                type="tertiary",
+                icon=":material/arrow_outward:",
+                width="content")
+
+with st.container(horizontal=True, vertical_alignment='bottom', horizontal_alignment='left'): 
+    st.subheader("Step 2", anchor=False,width="content")
+    st.markdown("Click on **:blue-background[:material/download: Export]**",width="content")
+with st.container(horizontal=True, vertical_alignment='top', horizontal_alignment='left'): 
+    st.subheader("Step 3", anchor=False,width="content")
+    stats = LinkedInAnalyticsProcessor()
 if stats.file:
     stats.process_engagement()
     stats.process_posts()
     stats.process_followers()
     stats.process_demographics()
-    if st.button("Generate"):
-        h2i = Html2Image(keep_temp_files=False)
-        dashboard_data = {
-            "metrics": stats.metrics,
-            "charts": stats.charts
-        }
+   
+    h2i = Html2Image(keep_temp_files=False)
+    dashboard_data = {
+        "metrics": stats.metrics,
+        "charts": stats.charts
+    }
 
-        buffer = BytesIO()
-        env = Environment(loader=FileSystemLoader('.'))
-        template = env.get_template('template.html')
-        html_content = template.render(dashboard_data)
-        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
-            temp_path = tmp.name
-        
-        try:
-            temp_dir = os.path.dirname(temp_path)
-            temp_file = os.path.basename(temp_path)
-            h2i.output_path = temp_dir
-            h2i.screenshot(
-                html_str=html_content, 
-                save_as=temp_file,
-                size=(1200,900)
-            )
-            with open(temp_path, 'rb') as temp_created:
-                st.download_button("Download Review", data=temp_created.read(), file_name="LinkedIn_Year_in_Review_2025.png")
-        except Exception as e:
-            # st.error("Could not generate temp file")
-            st.error(e)
-        finally:
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
-            st.info("Dashboard image generated successfully!")
+    
+    env = Environment(loader=FileSystemLoader('.'))
+    template = env.get_template('template.html')
+    html_content = template.render(dashboard_data)
+
+    html(html_content, width=1200, height=75)
