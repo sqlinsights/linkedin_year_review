@@ -2,15 +2,8 @@ import streamlit as st
 import pandas as pd
 from typing import Optional, Union, List
 from jinja2 import Environment, FileSystemLoader
-from html2image import Html2Image
-from io import BytesIO
 import humanize
-import tempfile
-import os
 from streamlit.components.v1 import html
-
-# st.html('styles.css')
-
 from pydantic import BaseModel
 
 class Metric(BaseModel):
@@ -142,7 +135,6 @@ if stats.file:
     stats.process_followers()
     stats.process_demographics()
    
-    h2i = Html2Image(keep_temp_files=False)
     dashboard_data = {
         "metrics": stats.metrics,
         "charts": stats.charts
