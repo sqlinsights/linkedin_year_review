@@ -1,0 +1,15 @@
+[theme]
+# Vision UI Deep Space Background
+backgroundColor = "#060b26"
+
+# Glassmorphism Card Color (used for sidebar and input backgrounds)
+secondaryBackgroundColor = "#1a1f37"
+
+# Vision UI Electric Blue (Primary Action Color)
+primaryColor = "#0075ff"
+
+# High-contrast white for readability
+textColor = "#ffffff"
+
+# Modern Typography category
+font = "sans serif"
