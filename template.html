@@ -3,10 +3,12 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Vision UI Export</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap"
         rel="stylesheet">
+
     <style>
         :root {
             --bg-deep: #060b26;
@@ -17,52 +19,70 @@
             --border: rgba(255, 255, 255, 0.1);
         }
 
-        html,
         body {
+            background: var(--bg-deep);
+            font-family: 'Plus Jakarta Sans', sans-serif;
             margin: 0;
-            padding: 0;
-            background-color: var(--bg-deep);
-            display: inline-block;
-            vertical-align: top;
-            font-family: "Plus Jakarta Sans", sans-serif;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        #capture {
-            display: inline-block;
+        /* The Button - Hidden during export */
+        .download-trigger {
+            margin-bottom: 20px;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 117, 255, 0.4);
+            transition: transform 0.2s;
+        }
+
+        .download-trigger:active {
+            transform: scale(0.95);
+        }
+
+        /* Content wrapper for Auto-Fit capture */
+        #capture-area {
             padding: 30px;
             background: radial-gradient(circle at 20% 20%, #1a1f37 0%, #060b26 100%);
+            display: inline-block;
+            border-radius: 24px;
         }
 
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            max-width: 1150;
+            gap: 20px;
+            width: 1100px;
         }
 
         .card {
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: 20px;
-            padding: 21px;
-            backdrop-filter: blur(10px);
+            padding: 24px;
+            color: white;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            display: flex;
-            flex-direction: column;
         }
 
+        /* Metric Styling */
         .metric-label {
             font-size: 11px;
             color: var(--text-muted);
             text-transform: uppercase;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             letter-spacing: 1px;
         }
 
         .value {
             font-size: 26px;
             font-weight: 700;
-            color: white;
             margin: 0;
         }
 
@@ -72,25 +92,25 @@
             margin-top: 8px;
         }
 
-        /* Pill List Styling */
+        /* Pill Styling */
         .pill-list {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
+            margin-top: 10px;
         }
 
         .pill-item {
             background: rgba(0, 117, 255, 0.15);
             color: var(--accent-blue);
-            border: 1px solid rgba(233, 102, 3, 0.3);
+            border: 1px solid rgba(0, 117, 255, 0.3);
             padding: 4px 12px;
             border-radius: 20px;
             font-size: 12px;
             font-weight: 600;
-            white-space: nowrap;
         }
 
-        /* Grid Span Helpers */
+        /* Grid Spans */
         .span-1 {
             grid-column: span 1;
         }
@@ -111,7 +131,6 @@
             margin: 0 0 15px 0;
             font-size: 16px;
             font-weight: 600;
-            color: white;
         }
 
         .chart-container {
@@ -122,7 +141,12 @@
 </head>
 
 <body>
-    <div id="capture">
+
+    <button class="download-trigger" onclick="exportDashboard()">
+        📥 Download Report (PNG)
+    </button>
+
+    <div id="capture-area">
         <div class="dashboard-grid">
 
             {% for metric in metrics %}
@@ -139,7 +163,9 @@
                 <div class="value">{{ metric.value }}</div>
                 {% endif %}
 
-                {% if metric.sub_label %}<div class="sub-label">{{ metric.sub_label }}</div>{% endif %}
+                {% if metric.sub_label %}
+                <div class="sub-label">{{ metric.sub_label }}</div>
+                {% endif %}
             </div>
             {% endfor %}
 
@@ -151,20 +177,23 @@
                 </div>
             </div>
             {% endfor %}
+
         </div>
     </div>
 
     <script>
-        // Disable animations for static capture
-        Chart.defaults.animation = false;
+        // 1. Render Charts (Data injected by Jinja)
+        Chart.defaults.animation = false; // Required for instant capture
+        Chart.defaults.color = '#a0aec0';
+
         const chartData = {{ charts | tojson }};
 
         chartData.forEach((config, index) => {
             const ctx = document.getElementById(`chart-${index}`).getContext('2d');
 
-            let background = '#ffffff';
+            let background = 'rgba(255,255,255,0.1)';
             if (config.type === 'line') {
-                const grad = ctx.createLinearGradient(0, 0, 0, 200);
+                const grad = ctx.createLinearGradient(0, 0, 0, config.height);
                 grad.addColorStop(0, 'rgba(0, 117, 255, 0.3)');
                 grad.addColorStop(1, 'rgba(0, 117, 255, 0)');
                 background = grad;
@@ -191,13 +220,31 @@
                     scales: {
                         y: {
                             grid: { color: 'rgba(255,255,255,0.05)' },
-                            ticks: { color: '#a0aec0', display: config.type === 'line' }
+                            ticks: { display: config.type === 'line' }
                         },
-                        x: { grid: { display: false }, ticks: { color: '#a0aec0' } }
+                        x: { grid: { display: false } }
                     }
                 }
             });
         });
+
+        // 2. Export Logic (Runs in User's Browser)
+        function exportDashboard() {
+            const area = document.getElementById('capture-area');
+
+            // html2canvas captures exactly the #capture-area element
+            html2canvas(area, {
+                backgroundColor: null,
+                scale: 2,             // Retina quality
+                useCORS: true,        // Load external fonts
+                logging: false
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'LinkedIn-Year-in-Review-2025.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
     </script>
 </body>
 
