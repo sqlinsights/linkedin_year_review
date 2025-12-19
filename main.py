@@ -6,7 +6,7 @@ from html2image import Html2Image
 from io import BytesIO
 import humanize
 import tempfile
-temp_dir = tempfile.gettempdir()
+import os
 # st.html('styles.css')
 
 from pydantic import BaseModel
@@ -137,7 +137,7 @@ if stats.file:
     stats.process_followers()
     stats.process_demographics()
     if st.button("Generate"):
-        h2i = Html2Image(keep_temp_files=False, output_path=temp_dir)
+        h2i = Html2Image(keep_temp_files=False)
         dashboard_data = {
             "metrics": stats.metrics,
             "charts": stats.charts
@@ -147,13 +147,24 @@ if stats.file:
         env = Environment(loader=FileSystemLoader('.'))
         template = env.get_template('template.html')
         html_content = template.render(dashboard_data)
-
-        test = h2i.screenshot(
-            html_str=html_content, 
-            save_as='LinkedInYearReview.png',
-            size=(1200,900)
-        )
-        with open(test[0], 'rb') as temp_created:
-            st.download_button("Download Review", data=temp_created.read(), file_name="LinkedIn_Year_in_Review_2025.png" )
-        h2i._remove_temp_file(test[0])
-        st.info("Dashboard image generated successfully!")
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+            temp_path = tmp.name
+        
+        try:
+            temp_dir = os.path.dirname(temp_path)
+            temp_file = os.path.basename(temp_path)
+            h2i.output_path = temp_dir
+            h2i.screenshot(
+                html_str=html_content, 
+                save_as=temp_file,
+                size=(1200,900)
+            )
+            with open(temp_path, 'rb') as temp_created:
+                st.download_button("Download Review", data=temp_created.read(), file_name="LinkedIn_Year_in_Review_2025.png")
+        except Exception as e:
+            # st.error("Could not generate temp file")
+            st.error(e)
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            st.info("Dashboard image generated successfully!")
